@@ -3,9 +3,9 @@
 import MaskInput from "@gruzf/mask-input";
 import { useForm, Controller } from 'react-hook-form';
 import api from "@/app/services/api/api";
-import * as ui from '@shadcn/ui';
-
-
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import { useRouter } from "next/navigation";
 
 
 interface sendData {
@@ -20,7 +20,7 @@ interface sendData {
 }
 
 export default function Cadastro() {
-    const { addToast } = ui.useToasts();
+  const router = useRouter();
     const {
         register,
         control,
@@ -28,20 +28,37 @@ export default function Cadastro() {
         formState: { errors },
     } = useForm<sendData>();
 
-    const sendSubmit = (data: sendData) => {
-        //const response = await api.post('/painel/account/create', data);
+    const sendSubmit = async (data: sendData) => {
 
-        // if(response.data.succes){
-        addToast({
-            title: 'Sucesso',
-            description: "tudo certo, no cadastro",
-            type: 'success',
-        });
-        // }
+        try{
+            // realiza o post e adiciona o alerta ao mesmo tempo
+            const response = await toast.promise(
+                api.post('/painel/account/create', data),
+                {
+                    pending: 'Processando',
+                    success: 'Conta criada com sucesso 👌',
+                }
+            )
+    
+             // redireciona para tela de login
+             if(response.data.succes){
+                router.push('/')
+             }
+        } catch (error) {
+            if (error.response && error.response.data.errors) {
+                const errors = error.response.data.errors;
+          
+                // Exibe vários alertas caso tenha mais de um erro
+                Object.keys(errors).forEach((key) => {
+                  errors[key].forEach((message) => {
+                    toast.error(message);
+                  });
+                });
+            }
+        }
     }
 
     return (
-        <ui.ToastProvider>
             <main className="flex w-full py-5  items-center justify-center px-4">
                 <div className="w-96">
                     <div className="w-full text-center mb-6">
@@ -174,6 +191,7 @@ export default function Cadastro() {
                             </div>
                             <input
                                 {...register('password')}
+                                type="password"
                                 className="border border-gray-400 focus:outline-none rounded-lg text-base px-[15px] py-3 w-full" />
                         </div>
                         <button className="p-3 h-12 text-center font-semibold mt-7 text-white bg-blue-700 border border-blue-700 hover:opacity-95 rounded-lg w-full">criar seu cadastro</button>
@@ -183,8 +201,8 @@ export default function Cadastro() {
                         <p className="text-sm text-gray-500 flex items-center justify-center">já tem cadastro? <a href="/" className="pl-2 underline">Entrar</a></p>
                     </div>
                 </div>
-            </main>
-        </ui.ToastProvider>
+                <ToastContainer />
+            </main> 
     );
 }
 
